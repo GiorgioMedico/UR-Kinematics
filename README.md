@@ -1,5 +1,6 @@
 # UR-Kinematics
 UR Inverse and Forward Kinematics. The inverse kinematics is closed-form, so you get 8 solution.
+There are only the DH Params for UR5 and UR5e but it's easy to put other params on the funtion coefficients.
 
 Is a ROS service, you send a request with your point or trajectory and responde with the partial soluzion(res.solution) that you ask and the complete one(res.complete_solution).
 
