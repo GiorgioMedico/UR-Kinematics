@@ -13,5 +13,7 @@ The end-effector frame has the x-azis in approach.
 There is a benchmark file in python that test the performance of the solution given.
 
 I tried to send 1M joints configuration to the FK and then send the solution to the IK.
+
 The error between the joint configuration sent and the result are in order of e-7 in average and the max error is in order of e-5.
+
 The FK give the solution in 40s and the IK in 70.
