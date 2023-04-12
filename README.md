@@ -6,3 +6,5 @@ Is a ROS service, you send a request with your point or trajectory and responde 
 The solution are defined in [-pi,pi] but for the 6 joint is [-2pi, 2pi].
 
 ![images](https://user-images.githubusercontent.com/104858347/231451074-66817aef-8ece-42a6-b8c0-33df89e40641.jpg)
+
+The frame are arranged almost in the same way but only the last one different. The end-effector frame has the x-azis in approach.
