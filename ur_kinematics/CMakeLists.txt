@@ -65,7 +65,6 @@ catkin_package(
 include_directories(
   include
   include/ur_kinematics
-  include/tqdm
   ${catkin_INCLUDE_DIRS}
 )
 
