@@ -11,7 +11,7 @@ The solution are defined in [-pi,pi] only for the 6-th joint is [-2pi, 2pi].
 ![images](https://user-images.githubusercontent.com/104858347/231451074-66817aef-8ece-42a6-b8c0-33df89e40641.jpg)
 
 The frame are arranged almost in the same way but only the last one is different. 
-The end-effector frame has the x-azis in approach.
+The end-effector frame has the x-azis in approach and the z-axis that point to the floor.
 
 There is a benchmark file in python that test the performance of the solution given.
 
