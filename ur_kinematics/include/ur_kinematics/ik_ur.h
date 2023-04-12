@@ -22,12 +22,8 @@
 #include <math.h> 
 #include <cmath>
 #include <Eigen/Dense>
-#include <std_srvs/SetBool.h>
 #include "ur_kinematics/UrInverseKinematics.h"
 #include "ur_kinematics/UrForwardKinematics.h"
-
-#include <boost/thread.hpp>
-#include <chrono>
 
 
 using V6f = Eigen::Matrix<float,6,1>;
