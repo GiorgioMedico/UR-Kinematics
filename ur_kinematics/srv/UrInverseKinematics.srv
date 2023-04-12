@@ -1,0 +1,7 @@
+geometry_msgs/Pose[] reference_pose
+int32[] desired_config
+string ur_type
+------------------------
+ur_kinematics/JointMatrix[] solution
+ur_kinematics/JointMatrix[] complete_solution
+bool success
