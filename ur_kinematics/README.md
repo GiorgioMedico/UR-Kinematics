@@ -16,5 +16,4 @@ Then you have to call the service from terminal or from scripts.
 
 In folder you can easily understand how to call service, there is a python scripts benchmark.py where you can see how to use it.
 
-## prove.cpp is just a code that i used to do same debug
 

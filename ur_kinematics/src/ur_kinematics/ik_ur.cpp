@@ -23,6 +23,8 @@
  * Conf 6 = shoulder left, elbow down, wrist up
  * Conf 7 = shoulder left, elbow up, wrist up
  * 
+ * Singular Configuration: q5 = 0 or q5 = pi
+ * 
  */
 
 #include "ik_ur.h"
@@ -408,6 +410,30 @@ namespace inverse_kinem{
                 }
             }
         }
+
+        // check the joint limits
+        
+        for (int i = 0; i < res.complete_solution.size(); i++)
+        {
+            for (int j = 0; j < res.complete_solution[i].joint_matrix.size(); j++)
+            {
+                int count = 0;
+                for (int k = 0; k < res.complete_solution[i].joint_matrix[j].data.size(); k++)
+                {
+                    if (res.complete_solution[i].joint_matrix[j].data[k] <= this->joint_limits[count] || res.complete_solution[i].joint_matrix[j].data[k] >= this->joint_limits[count+1])
+                    {
+                        res.success = false;
+                        ROS_ERROR("Joint limits exceeded!");
+                        ROS_ERROR("Joint %d exceeded limits", k+1);
+                        ROS_ERROR("Point %d, configuration %d", i, j);
+                        ROS_ERROR("Joint %d value: %f", k+1, res.complete_solution[i].joint_matrix[j].data[k]);
+                        return res.success;
+                    }
+                    count += 2;
+                }
+            }
+        }
+
 
         // std::cout << "IK solutions: " << std::endl;
         // std::cout << res << std::endl;

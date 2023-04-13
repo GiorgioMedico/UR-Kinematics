@@ -25,6 +25,8 @@
 #include "ur_kinematics/UrInverseKinematics.h"
 #include "ur_kinematics/UrForwardKinematics.h"
 
+#include <boost/thread.hpp>
+
 
 using V6f = Eigen::Matrix<float,6,1>;
 using V4f = Eigen::Matrix<float,4,1>;
@@ -50,6 +52,9 @@ namespace inverse_kinem{
             float d1, d4, d5,d6;
             float a2, a3;
             float alph1, alph4, alph5;
+
+            //vector of joint limits            1      1       2    2      3     3      4     4      5     5       6      6
+            std::vector<float> joint_limits = {-M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, -2*M_PI, 2*M_PI};
            
             M4f T_0_6 = M4f::Identity();
             V6f q;
