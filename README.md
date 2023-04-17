@@ -17,8 +17,7 @@ There is a benchmark file in python that test the performance of the solution gi
 
 I tried to send 1M joints configuration to the FK and then send the solution to the IK.
 
-The error between the joint configuration sent and the result are in order of e-7 in average and the max error is in order of e-5.
+The error between the joint configuration sent and the result are in order of 1e-5 in average and the max error is in order of 1e-3.
+400 of 1M are out of 1e-3 error and there aren't NaN solution.
 
-The FK give the solution in 85s and the IK in 124s. My computer has a IntelCore i7 7th Gen.
-
-![benchmark](https://user-images.githubusercontent.com/104858347/231457810-aa9ab879-1eeb-4884-aecf-2e1f06bd0bea.png)
+The FK give the solution in 95s and the IK in 136s. My computer has a IntelCore i7 7th Gen.
