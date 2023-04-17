@@ -68,7 +68,6 @@ namespace inverse_kinem{
             ur_kinematics::UrInverseKinematics::Response res_new;
             
 
-
             //Methods
             void initialiseRos();
             void coefficients();

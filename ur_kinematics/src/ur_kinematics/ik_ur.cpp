@@ -9,9 +9,7 @@
  * 
  * Authors: S. Chen, M. Luo, O. Abdelaziz and G. Jiang
  *  
- */
-
-/* 
+ * 
  * Configuration of the UR robot
  *
  * Conf 0 = shoulder right, elbow up, wrist up
@@ -89,7 +87,7 @@ namespace inverse_kinem{
         }
         else
         {   
-            ROS_ERROR("Robot not supported");
+            ROS_ERROR("Robot not supported yet");
         }
 
     }
@@ -98,6 +96,8 @@ namespace inverse_kinem{
     {
         this->fk_service = this->n.advertiseService("ur_forward_k", &FIKServer::fk_cb,this);
         this->ik_service = this->n.advertiseService("ur_inverse_k", &FIKServer::ik_cb,this);
+
+        std::cout<<"Kinematics Service Started"<<std::endl;
     }
 
   
@@ -106,10 +106,10 @@ namespace inverse_kinem{
 	M4f FIKServer::AH(float alpha, float a, float d, float theta)
 	{
 		M4f A;
-		A << cos(theta),    -sin(theta)*cos(alpha),     sin(theta)*sin(alpha),      a*cos(theta),
-            sin(theta),     cos(theta)*cos(alpha),      -cos(theta)*sin(alpha),     a*sin(theta),
-            0,              sin(alpha),                 cos(alpha),                 d,
-            0,              0,                          0,                          1;
+		A <<    std::cos(theta),    -std::sin(theta)*std::cos(alpha),     std::sin(theta)*std::sin(alpha),      a*std::cos(theta),
+                std::sin(theta),     std::cos(theta)*std::cos(alpha),     -std::cos(theta)*std::sin(alpha),     a*std::sin(theta),
+                0,                   std::sin(alpha),                      std::cos(alpha),                     d,
+                0,                   0,                                     0,                                  1;
 
 		return A;
 	}
@@ -187,28 +187,54 @@ namespace inverse_kinem{
 
         for (int i = 0; i < 4; i++)
         {
-            this->ik_solutions(i,0) = atan2(this->d4, sqrt(pow((this->d6*desired_pos(1,2) - desired_pos(1,3)),2) + pow((desired_pos(0,3)-this->d6*desired_pos(0,2)),2) - pow(this->d4,2))) - atan2(this->d6*desired_pos(1,2) - desired_pos(1,3), desired_pos(0,3)-this->d6*desired_pos(0,2));
-            this->ik_solutions(i+4,0) = atan2(this->d4, - sqrt(pow((this->d6*desired_pos(1,2) - desired_pos(1,3)),2) + pow((desired_pos(0,3)-this->d6*desired_pos(0,2)),2) - pow(this->d4,2))) - atan2(this->d6*desired_pos(1,2) - desired_pos(1,3), desired_pos(0,3)-this->d6*desired_pos(0,2));
+            this->ik_solutions(i,0) = std::atan2(this->d4, std::sqrt(std::pow((this->d6*desired_pos(1,2) - desired_pos(1,3)),2) + std::pow((desired_pos(0,3)-this->d6*desired_pos(0,2)),2) - std::pow(this->d4,2))) - std::atan2(this->d6*desired_pos(1,2) - desired_pos(1,3), desired_pos(0,3)-this->d6*desired_pos(0,2));
+            if(std::isnan(this->ik_solutions(i,0)))
+            {
+                this->ik_solutions(i,0) = std::atan2(this->d4, 0) - std::atan2(this->d6*desired_pos(1,2) - desired_pos(1,3), desired_pos(0,3)-this->d6*desired_pos(0,2));
+            }
+            this->ik_solutions(i+4,0) = std::atan2(this->d4, - std::sqrt(std::pow((this->d6*desired_pos(1,2) - desired_pos(1,3)),2) + std::pow((desired_pos(0,3)-this->d6*desired_pos(0,2)),2) - std::pow(this->d4,2))) - std::atan2(this->d6*desired_pos(1,2) - desired_pos(1,3), desired_pos(0,3)-this->d6*desired_pos(0,2));
+            if(std::isnan(this->ik_solutions(i+4,0)))
+            {
+                this->ik_solutions(i+4,0) = std::atan2(this->d4, 0) - std::atan2(this->d6*desired_pos(1,2) - desired_pos(1,3), desired_pos(0,3)-this->d6*desired_pos(0,2));
+            }
         }
 
         //calcolo theta5
 
         for (int i = 0; i < 2; i++)
         {
-            this->ik_solutions(i,4) = atan2(sqrt(pow((desired_pos(0,0)*sin(this->ik_solutions(i,0)) - desired_pos(1,0)*cos(this->ik_solutions(i,0))),2) + pow(desired_pos(0,1)*sin(this->ik_solutions(i,0)) - desired_pos(1,1)*cos(this->ik_solutions(i,0)),2)), desired_pos(0,2)*sin(this->ik_solutions(i,0)) - desired_pos(1,2)*cos(this->ik_solutions(i,0)));
-            this->ik_solutions(i+2,4) = atan2( - sqrt(pow((desired_pos(0,0)*sin(this->ik_solutions(i+2,0)) - desired_pos(1,0)*cos(this->ik_solutions(i+2,0))),2) + pow(desired_pos(0,1)*sin(this->ik_solutions(i+2,0)) - desired_pos(1,1)*cos(this->ik_solutions(i+2,0)),2)), desired_pos(0,2)*sin(this->ik_solutions(i+2,0)) - desired_pos(1,2)*cos(this->ik_solutions(i+2,0)));
-
-            this->ik_solutions(i+4,4) = atan2(sqrt(pow((desired_pos(0,0)*sin(this->ik_solutions(i+4,0)) - desired_pos(1,0)*cos(this->ik_solutions(i+4,0))),2) + pow(desired_pos(0,1)*sin(this->ik_solutions(i+4,0)) - desired_pos(1,1)*cos(this->ik_solutions(i+4,0)),2)), desired_pos(0,2)*sin(this->ik_solutions(i+4,0)) - desired_pos(1,2)*cos(this->ik_solutions(i+4,0)));
-            this->ik_solutions(i+4+2,4) = atan2( - sqrt(pow((desired_pos(0,0)*sin(this->ik_solutions(i+2+4,0)) - desired_pos(1,0)*cos(this->ik_solutions(i+2+4,0))),2) + pow(desired_pos(0,1)*sin(this->ik_solutions(i+2+4,0)) - desired_pos(1,1)*cos(this->ik_solutions(i+2+4,0)),2)), desired_pos(0,2)*sin(this->ik_solutions(i+2+4,0)) - desired_pos(1,2)*cos(this->ik_solutions(i+2+4,0)));
+            this->ik_solutions(i,4) = std::atan2(std::sqrt(std::pow((desired_pos(0,0)*std::sin(this->ik_solutions(i,0)) - desired_pos(1,0)*std::cos(this->ik_solutions(i,0))),2) + std::pow(desired_pos(0,1)*std::sin(this->ik_solutions(i,0)) - desired_pos(1,1)*std::cos(this->ik_solutions(i,0)),2)), desired_pos(0,2)*std::sin(this->ik_solutions(i,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i,0)));
+            // if(std::isnan(this->ik_solutions(i,4)))
+            // {
+            //     this->ik_solutions(i,4) = std::atan2(0, desired_pos(0,2)*std::sin(this->ik_solutions(i,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i,0)));
+            // }
+            
+            this->ik_solutions(i+2,4) = std::atan2( - std::sqrt(std::pow((desired_pos(0,0)*std::sin(this->ik_solutions(i+2,0)) - desired_pos(1,0)*std::cos(this->ik_solutions(i+2,0))),2) + std::pow(desired_pos(0,1)*std::sin(this->ik_solutions(i+2,0)) - desired_pos(1,1)*std::cos(this->ik_solutions(i+2,0)),2)), desired_pos(0,2)*std::sin(this->ik_solutions(i+2,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i+2,0)));
+            // if(std::isnan(this->ik_solutions(i+2,4)))
+            // {
+            //     this->ik_solutions(i+2,4) = std::atan2(0, desired_pos(0,2)*std::sin(this->ik_solutions(i+2,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i+2,0)));
+            // }
+            
+            this->ik_solutions(i+4,4) = std::atan2(std::sqrt(std::pow((desired_pos(0,0)*std::sin(this->ik_solutions(i+4,0)) - desired_pos(1,0)*std::cos(this->ik_solutions(i+4,0))),2) + std::pow(desired_pos(0,1)*std::sin(this->ik_solutions(i+4,0)) - desired_pos(1,1)*std::cos(this->ik_solutions(i+4,0)),2)), desired_pos(0,2)*std::sin(this->ik_solutions(i+4,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i+4,0)));
+            // if(std::isnan(this->ik_solutions(i+4,4)))
+            // {
+            //     this->ik_solutions(i+4,4) = std::atan2(0, desired_pos(0,2)*std::sin(this->ik_solutions(i+4,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i+4,0)));
+            // }
+            
+            this->ik_solutions(i+4+2,4) = std::atan2( - std::sqrt(std::pow((desired_pos(0,0)*std::sin(this->ik_solutions(i+2+4,0)) - desired_pos(1,0)*std::cos(this->ik_solutions(i+2+4,0))),2) + std::pow(desired_pos(0,1)*std::sin(this->ik_solutions(i+2+4,0)) - desired_pos(1,1)*std::cos(this->ik_solutions(i+2+4,0)),2)), desired_pos(0,2)*std::sin(this->ik_solutions(i+2+4,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i+2+4,0)));
+            // if(std::isnan(this->ik_solutions(i+2+4,4)))
+            // {
+            //     this->ik_solutions(i+2+4,4) = std::atan2(0, desired_pos(0,2)*std::sin(this->ik_solutions(i+2+4,0)) - desired_pos(1,2)*std::cos(this->ik_solutions(i+2+4,0)));
+            // }
         }
 
         //calcolo theta6
 
         for (int i = 0; i < 8; i++)
         {   
-            if (sin(this->ik_solutions(i,4)) != 0)
+            if ((this->ik_solutions(i,4)) != 0 && (this->ik_solutions(i,4)) != M_PI)
             {
-                this->ik_solutions(i,5) = atan2(-(desired_pos(0,1)*sin(this->ik_solutions(i,0)) - desired_pos(1,1)*cos(this->ik_solutions(i,0)))/sin(this->ik_solutions(i,4)), (desired_pos(0,0)*sin(this->ik_solutions(i,0)) - desired_pos(1,0)*cos(this->ik_solutions(i,0)))/sin(this->ik_solutions(i,4)));
+                this->ik_solutions(i,5) = std::atan2(-(desired_pos(0,1)*std::sin(this->ik_solutions(i,0)) - desired_pos(1,1)*std::cos(this->ik_solutions(i,0)))/std::sin(this->ik_solutions(i,4)), (desired_pos(0,0)*std::sin(this->ik_solutions(i,0)) - desired_pos(1,0)*std::cos(this->ik_solutions(i,0)))/std::sin(this->ik_solutions(i,4)));
             }
             else
             {
@@ -223,33 +249,60 @@ namespace inverse_kinem{
 
         for (int i = 0; i < 8; i++)
         {   
-            //calcolo theta234
-            float theta234 = atan2(- desired_pos(2,2)/sin(this->ik_solutions(i,4)), - (desired_pos(0,2)*cos(this->ik_solutions(i,0)) + desired_pos(1,2)*sin(this->ik_solutions(i,0)))/sin(this->ik_solutions(i,4)));
-
-            //calcolo theta2
-            float A = desired_pos(0,3)*cos(this->ik_solutions(i,0)) + desired_pos(1,3)*sin(this->ik_solutions(i,0)) - this->d5*sin(theta234) + this->d6*sin(this->ik_solutions(i,4))*cos(theta234);
-            
-            float B = desired_pos(2,3) - this->d1 + this->d5*cos(theta234) + this->d6*sin(this->ik_solutions(i,4))*sin(theta234);
-
-            float C = 2*this->a2*sqrt(pow(A,2) + pow(B,2));
-
-            if (i%2 == 0)
+            if ((this->ik_solutions(i,4)) != 0 && (this->ik_solutions(i,4)) != M_PI)
             {
-                this->ik_solutions(i,1) = atan2((pow(A,2) + pow(B,2) + pow(this->a2,2) - pow(this->a3,2))/C, sqrt(1-pow((pow(A,2) + pow(B,2) + pow(this->a2,2) - pow(this->a3,2))/C,2))) - atan2(A,B);
+                //calcolo theta234
+                float theta234 = std::atan2(- desired_pos(2,2)/std::sin(this->ik_solutions(i,4)), - (desired_pos(0,2)*std::cos(this->ik_solutions(i,0)) + desired_pos(1,2)*std::sin(this->ik_solutions(i,0)))/std::sin(this->ik_solutions(i,4)));
+                // if(std::isnan(theta234))
+                // {
+                //     std::cout << "Theta 234 not defined" << std::endl;
+                //     std::cout << "Singular Configuration " << std::endl;
+                //     return false;
+                // }
+
+                //calcolo theta2
+                float A = desired_pos(0,3)*std::cos(this->ik_solutions(i,0)) + desired_pos(1,3)*std::sin(this->ik_solutions(i,0)) - this->d5*std::sin(theta234) + this->d6*std::sin(this->ik_solutions(i,4))*std::cos(theta234);
+                
+                float B = desired_pos(2,3) - this->d1 + this->d5*std::cos(theta234) + this->d6*std::sin(this->ik_solutions(i,4))*std::sin(theta234);
+
+                float C = 2*this->a2*std::sqrt(std::pow(A,2) + std::pow(B,2));
+
+                if (i%2 == 0)
+                {
+                    this->ik_solutions(i,1) = std::atan2( (std::pow(A,2) + std::pow(B,2) + std::pow(this->a2,2) - std::pow(this->a3,2))/C, std::sqrt(1-std::pow((std::pow(A,2) + std::pow(B,2) + std::pow(this->a2,2) - std::pow(this->a3,2))/C ,2))) - std::atan2(A,B);
+ 
+                    if (std::isnan(this->ik_solutions(i,1)) && !std::isnan(theta234))
+                    {
+                        this->ik_solutions(i,1) = std::atan2( (std::pow(A,2) + std::pow(B,2) + std::pow(this->a2,2) - std::pow(this->a3,2))/C, 0) - std::atan2(A,B);
+                    }       
+                }
+                else
+                {
+                    this->ik_solutions(i,1) = std::atan2((std::pow(A,2) + std::pow(B,2) + std::pow(this->a2,2) - std::pow(this->a3,2))/C, - std::sqrt(1-std::pow((std::pow(A,2) + std::pow(B,2) + std::pow(this->a2,2) - std::pow(this->a3,2))/C ,2))) - std::atan2(A,B);
+                    
+                    if (std::isnan(this->ik_solutions(i,1)) && !std::isnan(theta234))
+                    {
+                        this->ik_solutions(i,1) = std::atan2( (std::pow(A,2) + std::pow(B,2) + std::pow(this->a2,2) - std::pow(this->a3,2))/C, 0) - std::atan2(A,B);
+                    }
+                    
+                }
+
+                //calcolo theta23
+                float theta23 = std::atan2((desired_pos(2,3)-this->d1+this->d5*std::cos(theta234)-this->a2*std::sin(this->ik_solutions(i,1))+this->d6*std::sin(this->ik_solutions(i,4))*std::sin(theta234))/this->a3, (desired_pos(0,3)*std::cos(this->ik_solutions(i,0))+desired_pos(1,3)*std::sin(this->ik_solutions(i,0))-this->d5*std::sin(theta234)-this->a2*std::cos(this->ik_solutions(i,1))+this->d6*std::sin(this->ik_solutions(i,4))*std::cos(theta234))/this->a3);
+                
+                //calcolo theta3
+                this->ik_solutions(i,2) = theta23 - this->ik_solutions(i,1);
+
+                //calcolo theta4
+                this->ik_solutions(i,3) = theta234 - this->ik_solutions(i,2) - this->ik_solutions(i,1);
+                
             }
             else
             {
-                this->ik_solutions(i,1) = atan2((pow(A,2) + pow(B,2) + pow(this->a2,2) - pow(this->a3,2))/C, - sqrt(1-pow((pow(A,2) + pow(B,2) + pow(this->a2,2) - pow(this->a3,2))/C,2))) - atan2(A,B);
+                std::cout << "Theta 2, 3 and 4 not defined" << std::endl;
+                std::cout << "Singular Configuration " << std::endl;
+                return false;
             }
-
-            //calcolo theta23
-            float theta23 = atan2((desired_pos(2,3)-this->d1+this->d5*cos(theta234)-this->a2*sin(this->ik_solutions(i,1))+this->d6*sin(this->ik_solutions(i,4))*sin(theta234))/this->a3, (desired_pos(0,3)*cos(this->ik_solutions(i,0))+desired_pos(1,3)*sin(this->ik_solutions(i,0))-this->d5*sin(theta234)-this->a2*cos(this->ik_solutions(i,1))+this->d6*sin(this->ik_solutions(i,4))*cos(theta234))/this->a3);
-
-            //calcolo theta3
-            this->ik_solutions(i,2) = theta23 - this->ik_solutions(i,1);
-
-            //calcolo theta4
-            this->ik_solutions(i,3) = theta234 - this->ik_solutions(i,2) - this->ik_solutions(i,1);
         }
 
         //riporto i risulatati nell'intervallo [-pi,pi]
@@ -278,7 +331,6 @@ namespace inverse_kinem{
     bool FIKServer::ik_cb(ur_kinematics::UrInverseKinematics::Request &req, ur_kinematics::UrInverseKinematics::Response &res)
     {   
 
-        //lista di numeri
         std::vector<int> desired_config = req.desired_config; 
 
         // DH parameters
@@ -297,6 +349,7 @@ namespace inverse_kinem{
 
         // vettore di quaternioni
         std::vector<Eigen::Quaternionf> q;
+        
         // fill the vector
         for (int i = 0; i < req.reference_pose.size(); i++)
         {
@@ -310,6 +363,7 @@ namespace inverse_kinem{
 
         // vettore di matrici di rotazione
         std::vector<Eigen::Matrix3f> R;
+
         // fill the vector
         for (int i = 0; i < q.size(); i++)
         {
@@ -319,6 +373,7 @@ namespace inverse_kinem{
 
         // vettore di omonogenee di riferimento
         std::vector<M4f> reference;
+
         // fill the vector
         for (int i = 0; i < R.size(); i++)
         {
@@ -334,13 +389,6 @@ namespace inverse_kinem{
             reference.push_back(temp);
         }
 
-        //correzioni per il mio sistema di riferimento
-        for (int i = 0; i < reference.size(); i++)
-        {
-            reference[i].block<3,3>(0,0) = reference[i].block<3,3>(0,0)*Rz;
-            reference[i].block<3,3>(0,0) = reference[i].block<3,3>(0,0)*Rx;
-        }
-
         //inizializzo la matrice di soluzioni
         res.complete_solution.resize(reference.size());
         res.solution.resize(reference.size());
@@ -349,6 +397,10 @@ namespace inverse_kinem{
         
         for (int i = 0; i < reference.size(); i++)
         {
+            //correzione per il mio sistema di riferimento1
+            reference[i].block<3,3>(0,0) = reference[i].block<3,3>(0,0)*Rz;
+            reference[i].block<3,3>(0,0) = reference[i].block<3,3>(0,0)*Rx;
+
             //calcolo la IK
             bool ik_ok = this->invKine(reference[i]);
 
@@ -357,6 +409,8 @@ namespace inverse_kinem{
                 // service call failed
                 res.success = false;
                 ROS_ERROR("IK service call failed");
+                ROS_ERROR("Position: %f %f %f", req.reference_pose[i].position.x, req.reference_pose[i].position.y, req.reference_pose[i].position.z);
+                ROS_ERROR("Orientation: %f %f %f %f", req.reference_pose[i].orientation.x, req.reference_pose[i].orientation.y, req.reference_pose[i].orientation.z, req.reference_pose[i].orientation.w);
                 return res.success;
             }
 
@@ -380,10 +434,12 @@ namespace inverse_kinem{
                     {
                         res.solution[i].joint_matrix[iteratore].data[k] = this->ik_solutions(j,k);
                     }
-
                     iteratore++;
                 }
             }
+
+            //resetto l'iteratore
+            iteratore = 0;
         }
         
         // chiamo funzione di controllo per l'ultimo giunto
@@ -406,8 +462,11 @@ namespace inverse_kinem{
                     {
                         res.solution[i].joint_matrix[iteratore].data[5] = this->res_new.solution[i].joint_matrix[iteratore].data[5];
                     }
-                    
+
+                    iteratore++;                    
                 }
+
+                iteratore = 0;
             }
         }
 
@@ -424,9 +483,8 @@ namespace inverse_kinem{
                     {
                         res.success = false;
                         ROS_ERROR("Joint limits exceeded!");
-                        ROS_ERROR("Joint %d exceeded limits", k+1);
+                        ROS_ERROR("Joint %d exceeded limits, value:", k+1, res.complete_solution[i].joint_matrix[j].data[k]);
                         ROS_ERROR("Point %d, configuration %d", i, j);
-                        ROS_ERROR("Joint %d value: %f", k+1, res.complete_solution[i].joint_matrix[j].data[k]);
                         return res.success;
                     }
                     count += 2;
