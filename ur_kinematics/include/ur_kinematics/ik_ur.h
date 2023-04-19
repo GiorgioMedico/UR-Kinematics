@@ -79,7 +79,7 @@ namespace inverse_kinem{
             M4f AH(float alpha, float a, float d, float theta);
             bool invKine(M4f desired_pos);
 
-            bool checkq6(ur_kinematics::UrInverseKinematics::Response &res);
+            bool checkq6();
 
     };
 }

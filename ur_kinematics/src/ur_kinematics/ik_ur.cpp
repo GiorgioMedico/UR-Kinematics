@@ -390,8 +390,8 @@ namespace inverse_kinem{
         }
 
         //inizializzo la matrice di soluzioni
-        res.complete_solution.resize(reference.size());
-        res.solution.resize(reference.size());
+        this->res_new.complete_solution.resize(reference.size());
+        this->res_new.solution.resize(reference.size());
 
         unsigned int iteratore = 0;
         
@@ -415,24 +415,24 @@ namespace inverse_kinem{
             }
 
             //resize
-            res.complete_solution[i].joint_matrix.resize(8);
-            res.solution[i].joint_matrix.resize(desired_config.size());
+            this->res_new.complete_solution[i].joint_matrix.resize(8);
+            this->res_new.solution[i].joint_matrix.resize(desired_config.size());
 
             //riempio la matrice di soluzioni
             for (int j = 0; j < 8; j++)
             {
-                res.complete_solution[i].joint_matrix[j].data.resize(6);
+                this->res_new.complete_solution[i].joint_matrix[j].data.resize(6);
                 for (int k = 0; k < 6; k++)
                 {
-                    res.complete_solution[i].joint_matrix[j].data[k] = this->ik_solutions(j,k);
+                    this->res_new.complete_solution[i].joint_matrix[j].data[k] = this->ik_solutions(j,k);
                 }
 
                 if (j == desired_config[iteratore] && iteratore < desired_config.size())
                 {
-                    res.solution[i].joint_matrix[iteratore].data.resize(6);
+                    this->res_new.solution[i].joint_matrix[iteratore].data.resize(6);
                     for (int k = 0; k < 6; k++)
                     {
-                        res.solution[i].joint_matrix[iteratore].data[k] = this->ik_solutions(j,k);
+                        this->res_new.solution[i].joint_matrix[iteratore].data[k] = this->ik_solutions(j,k);
                     }
                     iteratore++;
                 }
@@ -444,26 +444,22 @@ namespace inverse_kinem{
         
         // chiamo funzione di controllo per l'ultimo giunto
 
-        bool result = this->checkq6(res);
+        bool result = this->checkq6();
 
         if (result)
         {
             iteratore = 0;
 
             // riempio la matrice di soluzioni
-            for (int i = 0; i < res.complete_solution.size(); i++)
+            for (int i = 0; i < this->res_new.complete_solution.size(); i++)
             {
-                for (int j = 0; j < res.complete_solution[i].joint_matrix.size(); j++)
+                for (int j = 0; j < this->res_new.complete_solution[i].joint_matrix.size(); j++)
                 {
-
-                    res.complete_solution[i].joint_matrix[j].data[5] = this->res_new.complete_solution[i].joint_matrix[j].data[5];
-
                     if (j == desired_config[iteratore] && iteratore < desired_config.size())
                     {
-                        res.solution[i].joint_matrix[iteratore].data[5] = this->res_new.solution[i].joint_matrix[iteratore].data[5];
+                        this->res_new.solution[i].joint_matrix[iteratore].data[5] = this->res_new.complete_solution[i].joint_matrix[j].data[5];
+                        iteratore++;
                     }
-
-                    iteratore++;                    
                 }
 
                 iteratore = 0;
@@ -472,18 +468,18 @@ namespace inverse_kinem{
 
         // check the joint limits
         
-        for (int i = 0; i < res.complete_solution.size(); i++)
+        for (int i = 0; i < this->res_new.complete_solution.size(); i++)
         {
-            for (int j = 0; j < res.complete_solution[i].joint_matrix.size(); j++)
+            for (int j = 0; j < this->res_new.complete_solution[i].joint_matrix.size(); j++)
             {
                 int count = 0;
-                for (int k = 0; k < res.complete_solution[i].joint_matrix[j].data.size(); k++)
+                for (int k = 0; k < this->res_new.complete_solution[i].joint_matrix[j].data.size(); k++)
                 {
-                    if (res.complete_solution[i].joint_matrix[j].data[k] <= this->joint_limits[count] || res.complete_solution[i].joint_matrix[j].data[k] >= this->joint_limits[count+1])
+                    if (this->res_new.complete_solution[i].joint_matrix[j].data[k] <= this->joint_limits[count] || this->res_new.complete_solution[i].joint_matrix[j].data[k] >= this->joint_limits[count+1])
                     {
                         res.success = false;
                         ROS_ERROR("Joint limits exceeded!");
-                        ROS_ERROR("Joint %d exceeded limits, value:", k+1, res.complete_solution[i].joint_matrix[j].data[k]);
+                        ROS_ERROR("Joint %d exceeded limits, value:", k+1, this->res_new.complete_solution[i].joint_matrix[j].data[k]);
                         ROS_ERROR("Point %d, configuration %d", i, j);
                         return res.success;
                     }
@@ -496,69 +492,36 @@ namespace inverse_kinem{
         // std::cout << "IK solutions: " << std::endl;
         // std::cout << res << std::endl;
 
+        res.complete_solution = this->res_new.complete_solution;
+        res.solution = this->res_new.solution;
+
         res.success = true;
 
         return res.success;
     }
 
-    bool FIKServer::checkq6(ur_kinematics::UrInverseKinematics::Response &res)
+    bool FIKServer::checkq6()
     {
         bool check = false;
 
-        // resize della matrice di soluzioni
-        this->res_new.complete_solution.resize(res.complete_solution.size());
-        this->res_new.solution.resize(res.solution.size());
-
-        // copio la matrice di soluzioni
-        this->res_new.success = res.success;
-        this->res_new.complete_solution = res.complete_solution;
-        this->res_new.solution = res.solution;
-
-       
-
-        for (int i = 0; i < this->res_new.complete_solution.size(); i++)
+        for (int i =1; i < this->res_new.complete_solution.size(); i++)
         {
             for (int j = 0; j < this->res_new.complete_solution[i].joint_matrix.size(); j++)
             {
-                if (j > 0)
-                {   
-                    // check if the solution jumps from -pi to pi or viceversa
-                    float diff = this->res_new.complete_solution[i].joint_matrix[j].data[5] - this->res_new.complete_solution[i].joint_matrix[j-1].data[5];
-                    if (diff > 2*M_PI)
-                    {   
-                        this->res_new.complete_solution[i].joint_matrix[j].data[5] = this->res_new.complete_solution[i].joint_matrix[j].data[5] - 2*M_PI;
-                        check = true;
-                    }
-                    else if (diff < -2*M_PI)
-                    {
-                        this->res_new.complete_solution[i].joint_matrix[j].data[5] = this->res_new.complete_solution[i].joint_matrix[j].data[5] + 2*M_PI;
-                        check = true;
-                    }
+                float diff = this->res_new.complete_solution[i].joint_matrix[j].data[5] - this->res_new.complete_solution[i-1].joint_matrix[j].data[5];
+                if(diff > M_PI)
+                {
+                    this->res_new.complete_solution[i].joint_matrix[j].data[5] -= 2*M_PI;
+                    check = true;
                 }
-            }
-        }
-
-        if (check)
-        {
-            for(int i=0; i<8; i++){
-                // check if the solution is greater than 2pi or less than -2pi
-
-                if(this->res_new.complete_solution[this->res_new.complete_solution.size()-1].joint_matrix[i].data[5] > 2*M_PI){
-                    // specchio la soluzione per il giunto 6 a tutte le soluzioni
-                    for(int j=0; j<8; j++){
-                        this->res_new.complete_solution[this->res_new.complete_solution.size()-1].joint_matrix[j].data[5] = (this->res_new.complete_solution[this->res_new.complete_solution.size()-1].joint_matrix[j].data[5] - this->res_new.complete_solution[0].joint_matrix[j].data[5]) + this->res_new.complete_solution[0].joint_matrix[j].data[5];
-                    }
-                }
-                else if(this->res_new.complete_solution[this->res_new.complete_solution.size()-1].joint_matrix[i].data[5] < -2*M_PI){
-                    // specchio la soluzione per il giunto 6 a tutte le soluzioni
-                    for(int j=0; j<8; j++){
-                        this->res_new.complete_solution[this->res_new.complete_solution.size()-1].joint_matrix[j].data[5] = (this->res_new.complete_solution[this->res_new.complete_solution.size()-1].joint_matrix[j].data[5] - this->res_new.complete_solution[0].joint_matrix[j].data[5]) + this->res_new.complete_solution[0].joint_matrix[j].data[5];
-                    }
+                else if(diff < -M_PI)
+                {
+                    this->res_new.complete_solution[i].joint_matrix[j].data[5] += 2*M_PI;
+                    check = true;
                 }
             }
         }
 
         return check;
-
     }
 }
