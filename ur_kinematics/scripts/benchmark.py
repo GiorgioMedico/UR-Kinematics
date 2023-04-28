@@ -19,12 +19,17 @@ class Benchmark:
 
     def __init__(self):
 
+        self.save_data = False
+
         self.tolerance = 1e-3
+
+        self.check_q6 = True
+        self.ik_move_q6 = 0
 
         self.duration = 0
         self.duration_f = 0
 
-        self.num_of_tests = 1000000
+        self.num_of_tests = 1000
 
         self.average_error = 0
         self.max_error = 0
@@ -61,11 +66,40 @@ class Benchmark:
         print('Duration FK: ', self.duration_f, 's')
         print('Average time FK: ', self.duration_f/self.num_of_tests, 's')
 
+        if self.check_q6:
+            print('')
+            print('Q6 moved: ', self.ik_move_q6, 'Rads')
+            print('')
+
 
     def benchmark(self, num_of_tests):
 
-        # generate random joint angles [-pi, pi]
-        joint_angles = np.random.uniform(-np.pi, np.pi, (num_of_tests, 6))
+
+
+        if self.check_q6:
+
+            # creo un array di array di 6 elementi
+            joint_angles = np.zeros((int(self.num_of_tests), 6))
+            # il primo elemento per tutti gli array è 0, il secondo è -1.57, il terzo è 0, il quarto è 0, il quinto è pi/2 e l'ultimo è crecente da 0 a 3pi
+            joint_angles[:, 1] = -1.57
+            joint_angles[:, 2] = 0
+            joint_angles[:, 3] = 0
+            joint_angles[:, 4] = np.pi/2
+            joint_angles[:, 5] = np.linspace(np.deg2rad(10), np.deg2rad(360+10), int(num_of_tests))
+
+            # joint_angles2 = np.zeros((int(self.num_of_tests/2), 6))
+            # joint_angles2[:, 1] = -1.57
+            # joint_angles2[:, 2] = 0
+            # joint_angles2[:, 3] = 0
+            # joint_angles2[:, 4] = np.pi/2
+            # joint_angles2[:, 5] = np.linspace(3/2*np.pi, np.pi/2, int(self.num_of_tests/2))
+
+            # # concateno i due array
+            # joint_angles = np.concatenate((joint_angles, joint_angles2))
+
+        else:
+            # generate random joint angles [-pi, pi]
+            joint_angles = np.random.uniform(-np.pi, np.pi, (num_of_tests, 6))
 
         buffer = [Float64MultiArray() for i in range(num_of_tests)]
 
@@ -100,14 +134,8 @@ class Benchmark:
 
         req_ik.ur_type = 'UR5e'
         req_ik.desired_config = [2,4,7]
-      
-        # self.poses[0].position.x = -0.17078473023916108
-        # self.poses[0].position.y = -0.5772072659357064
-        # self.poses[0].position.z = 0.29273325406756945
-        # self.poses[0].orientation.x = -0.9868896566015951
-        # self.poses[0].orientation.y = -0.0011259553397428867
-        # self.poses[0].orientation.z = 0.16139227636023654
-        # self.poses[0].orientation.w = 0.0002665494694868573
+
+        req_ik.check_q6 = self.check_q6
 
         req_ik.reference_pose = copy.deepcopy(self.poses)
 
@@ -115,6 +143,8 @@ class Benchmark:
         start = rospy.get_time()
 
         ik_res = self.inverse_kinematics_service(req_ik)
+
+        self.ik_move_q6 = ik_res.move_q6[0]
 
         if ik_res.success == False:
             cprint('IK failed', 'red', attrs=['bold'])
@@ -166,7 +196,7 @@ class Benchmark:
             # cerca la configurazione che corrisponde a joint_angles[i]
             for j in range(len(ik_res[i].joint_matrix)):
 
-                if np.allclose(ik_res[i].joint_matrix[j].data, joint_angles[i], atol=self.tolerance):
+                if np.allclose(ik_res[i].joint_matrix[j].data, joint_angles[i] + self.ik_move_q6, atol=self.tolerance):
                     # calcola errore
                     error = np.linalg.norm(joint_angles[i] - ik_res[i].joint_matrix[j].data)
                     self.average_error += error
@@ -188,9 +218,10 @@ class Benchmark:
                     # print(joint_angles[i])
                     conf_not_found += 1
 
-        cprint('Saving data...', 'magenta')
-        # salvo in un csv il dataframe
-        self.df_pose_not_found.to_csv(self.dir_path + '/ik_error/pose_not_found.csv', index=False)
+        if not self.check_q6 and self.save_data:
+            cprint('Saving data...', 'magenta')
+            # salvo in un csv il dataframe
+            self.df_pose_not_found.to_csv(self.dir_path + '/ik_error/pose_not_found.csv', index=False)
 
         if nan_counter > 0:
             print('')
@@ -207,6 +238,9 @@ class Benchmark:
             print('Tollerance: ', self.tolerance)
             print('Number of configurations not found (NaN included): ', conf_not_found)
             print('Number of configurations found: ', self.num_of_tests - conf_not_found)
+            # percentuale di errore
+            print('')
+            print('Error percentage: ', conf_not_found/self.num_of_tests*100, '%')
         else:
             print('')
             cprint('All configurations found', 'green', attrs=['bold'])
@@ -220,7 +254,7 @@ if __name__ == '__main__':
 
     rospy.init_node('benchmark')
     
-    for i in tqdm(range(10)):
+    for i in tqdm(range(1)):
 
         if rospy.is_shutdown():
             break

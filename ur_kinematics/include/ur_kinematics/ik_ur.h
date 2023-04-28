@@ -24,6 +24,7 @@
 #include <Eigen/Dense>
 #include "ur_kinematics/UrInverseKinematics.h"
 #include "ur_kinematics/UrForwardKinematics.h"
+#include <sensor_msgs/JointState.h>
 
 #include <boost/thread.hpp>
 
@@ -34,9 +35,11 @@ using M86f = Eigen::Matrix<float,8,6>;
 using M4f = Eigen::Matrix4f;
 
 
-namespace inverse_kinem{
+namespace inverse_kinem
+{
 
-    class FIKServer{
+    class FIKServer
+    {
 
         public:
 
@@ -64,7 +67,6 @@ namespace inverse_kinem{
             ros::ServiceServer fk_service ;
             ros::ServiceServer ik_service ;
             std::string ur_type;
-
             ur_kinematics::UrInverseKinematics::Response res_new;
             
 

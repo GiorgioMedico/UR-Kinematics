@@ -56,7 +56,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include 
-  LIBRARIES ur_position_control_node
+  LIBRARIES ur_kinematics
   CATKIN_DEPENDS roscpp rospy std_msgs sensor_msgs geometry_msgs std_srvs
   DEPENDS 
 )
